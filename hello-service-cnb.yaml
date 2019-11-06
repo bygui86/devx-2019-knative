@@ -1,0 +1,33 @@
+apiVersion: tekton.dev/v1alpha1
+kind: TaskRun
+metadata:
+  name: hello-springboot-mvn-build
+spec:
+  taskRef:
+    name: buildpacks-v3
+  podTemplate:
+    volumes:
+    - name: my-cache
+  inputs:
+    resources:
+    - name: source
+      resourceSpec:
+        type: git
+        params:
+        - name: url
+          value: https://github.com/jamesward/hello-springboot-mvn.git
+    params:
+    - name: BUILDER_IMAGE
+      value: heroku/buildpacks
+    - name: USE_CRED_HELPERS
+      value: "true"
+    - name: CACHE
+      value: my-cache
+  outputs:
+    resources:
+    - name: image
+      resourceSpec:
+        type: image
+        params:
+        - name: url
+          value: gcr.io/$PROJECT_ID/hello-springboot-mvn-knative

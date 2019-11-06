@@ -1,0 +1,66 @@
+apiVersion: sources.eventing.knative.dev/v1alpha1
+kind: CronJobSource
+metadata:
+  name: cronjob-spring-upper
+spec:
+  schedule: "* * * * *"
+  data: '{"message": "hello, world"}'
+  sink:
+    ref:
+      apiVersion: eventing.knative.dev/v1alpha1
+      kind: Broker
+      name: default
+---
+apiVersion: serving.knative.dev/v1alpha1
+kind: Service
+metadata:
+  name: spring-upper
+  labels:
+    serving.knative.dev/visibility: cluster-local
+spec:
+  template:
+    spec:
+      containers:
+        - image: gcr.io/$PROJECT_ID/upper-function
+---
+apiVersion: serving.knative.dev/v1alpha1
+kind: Service
+metadata:
+  name: event-display
+  labels:
+    serving.knative.dev/visibility: cluster-local
+spec:
+  template:
+    spec:
+      containers:
+        - image: gcr.io/knative-releases/github.com/knative/eventing-sources/cmd/event_display
+---
+apiVersion: eventing.knative.dev/v1alpha1
+kind: Trigger
+metadata:
+  name: upper-trigger
+spec:
+  broker: default
+  filter:
+    sourceAndType:
+      type: dev.knative.cronjob.event
+  subscriber:
+    ref:
+      apiVersion: serving.knative.dev/v1alpha1
+      kind: Service
+      name: spring-upper
+---
+apiVersion: eventing.knative.dev/v1alpha1
+kind: Trigger
+metadata:
+  name: event-display-trigger
+spec:
+  broker: default
+  filter:
+    sourceAndType:
+      type: spring-upper
+  subscriber:
+    ref:
+      apiVersion: serving.knative.dev/v1alpha1
+      kind: Service
+      name: event-display
